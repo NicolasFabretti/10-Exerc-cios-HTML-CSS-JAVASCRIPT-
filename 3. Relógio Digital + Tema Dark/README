@@ -1,0 +1,22 @@
+Relógio Digital com Tema Dark
+
+Projeto simples de Relógio Digital desenvolvido com HTML, CSS e JavaScript, que exibe a hora em tempo real e permite alternar entre tema claro e escuro, salvando a preferência do usuário com LocalStorage.
+
+- O relógio mostra:
+Hora, minutos e segundos em tempo real;
+Botão para alternar o tema;
+Tema salvo mesmo após atualizar a página;
+
+Funcionalidades:
+
+Relógio digital em tempo real (setInterval);
+🌙 Tema Dark / ☀️ Tema Light;
+💾 Salvamento do tema no localStorage;
+🎨 Layout simples e responsivo;
+🖱️ Botão interativo com hover e active;
+🛠️ Tecnologias Utilizadas;
+
+HTML5
+CSS3
+JavaScript
+LocalStorage
