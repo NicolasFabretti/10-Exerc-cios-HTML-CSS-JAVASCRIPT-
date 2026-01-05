@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+
+
+        /*edicoes principais*/
+        html, body{
+            height: 100%; margin: 0; padding: 0;
+        }
+        body{
+            background: url('img/abstract-background-with-purple-sphere.jpg') no-repeat;
+            background-size: cover;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container{
+            width: 100%;
+            max-width: 1000px;
+            padding: 20px 20px;
+            backdrop-filter: blur(15px); /* efeito de vidro */
+            box-shadow:  10px 10px 10px 10px #af36ff; /* sombra */
+            border-radius: 20px;
+            margin: 0px 50px;
+        }
+
+
+        /*ALINHAMENTOS*/
+        header{
+            display: flex;
+            justify-content: space-between;
+        }
+        .search{
+            display: flex;
+            gap: 10px;
+        }
+        .list-task{
+            display: flex;
+            justify-content: space-between;
+        }
+        footer{
+            text-align: center;
+            padding: 20px 0px;
+        }
+
+
+        /*EDICOES*/
+        header div h2,p{
+            margin: 0px;
+        }
+        #type-task{
+            padding: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.219);
+            background-color: inherit;
+            border-radius: 10px;
+            flex-grow: 2;
+            color: white;
+        }
+        #add{
+            background-color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 0px 20px;
+        }
+        #all, #pending, #completed,#search-task{
+            background-color: inherit;
+            color: white;
+            border:1px solid rgba(255, 255, 255, 0.219);
+            padding: 7px 15px;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+        #search-task::placeholder{
+            color: white;
+        }
+        #add{
+            cursor: pointer;
+        }
+
+
+
+        /*criando o estilo do task adicionado*/
+        .task{
+            padding: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.219);
+            background-color: inherit;
+            border-radius: 10px;
+            list-style: none;
+            text-align: start;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+        #name-list{
+            padding: 0;
+        }
+        .checkbox{
+            cursor: pointer;
+            
+        }
+        .span{
+            margin-left: 5px;
+            flex-grow: 2;
+        }
+        .spanEmoji{
+            cursor: pointer;
+        }
+        .editar{
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <header>
+            <div>
+                <h2>To-do List </h2>
+                <p>Adicionar, editar, remover, filtrar e salvar suas tarefas no navegador</p>
+            </div>
+            <div>
+                <h3 id="total">Total: 0 • Concluídas: 0</h3>
+            </div>
+        </header>
+        
+        <section class="search">
+            <input id="type-task" type="search" placeholder="Digite sua tarefa e pressione Enter">
+            <input id="add" type="button" value="Adicionar">
+        </section>
+        <br>
+        <section class="list-task">
+            <div>
+                <input id="all" type="button" value="Todas">
+                <input id="pending" type="button" value="Pendentes">
+                <input id="completed" type="button" value="Concluídas">
+            </div>
+            <input id="search-task" type="text" placeholder="Pesquisar tarefas...">
+        </section>
+
+        <footer>
+            <ul id="name-list"></ul>
+            <p id="frase">
+                Nenhuma tarefa. Adicione sua primeira tarefa acima
+            </p>
+        </footer>
+    </main>
+    
+</body>
+
+<script>
+    // =========================
+    // VARIÁVEIS GLOBAIS
+    // =========================
+
+    // Controla qual filtro está ativo (todas | pendentes | concluido)
+    let filtroAtual = 'todas'
+
+    // Botão de adicionar tarefa
+    const btnAdd = document.querySelector('#add')
+
+    // Campo de texto onde o usuário digita a tarefa
+    const valorCampo = document.querySelector('#type-task')
+
+    // Array principal que guarda todas as tarefas
+    const lista = []
+
+    // Carrega tarefas salvas no LocalStorage ao iniciar
+    carregarLocalStorage()
+
+    // =========================
+    // EVENTOS DE ADICIONAR
+    // =========================
+
+    // Clique no botão "Adicionar"
+    btnAdd.addEventListener('click', function(){ 
+        adicionarNaLista()   // adiciona a tarefa no array
+        criarElemento()      // recria a lista no HTML
+        atualizarFrase()     // atualiza mensagem de lista vazia ou não
+        atualizarTotal()     // atualiza contador
+    })
+
+    // Pressionar ENTER no input
+    valorCampo.addEventListener('keydown', function(e){
+        if(e.key === 'Enter'){
+            adicionarNaLista()
+            criarElemento()
+            atualizarFrase()
+            atualizarTotal()
+        }
+    })
+
+    // =========================
+    // BOTÕES DE FILTRO
+    // =========================
+
+    const btnPendentes = document.querySelector('#pending')
+    const btnConcluido = document.querySelector('#completed')
+    const btnTodas = document.querySelector('#all')
+
+    // Mostra apenas tarefas pendentes
+    btnPendentes.addEventListener('click', function(){
+        filtroAtual = 'pendentes'
+        criarElemento()
+
+    })
+
+    // Mostra apenas tarefas concluídas
+    btnConcluido.addEventListener('click', function(){
+        filtroAtual = 'concluido'
+        criarElemento()
+    })
+
+    // Mostra todas as tarefas
+    btnTodas.addEventListener('click',function(){
+        filtroAtual = 'todas'
+        criarElemento()  
+    })
+
+    // =========================
+    // FILTRAGEM DA LISTA
+    // =========================
+
+    function pegarListaFiltrada(){
+        // Retorna apenas tarefas NÃO concluídas
+        if (filtroAtual === 'pendentes'){
+            return lista.filter(item => !item.concluido)
+            
+        }
+        
+        // Retorna apenas tarefas concluídas
+        if(filtroAtual === 'concluido'){
+            return lista.filter(item => item.concluido)
+        }
+        
+        // Caso padrão: retorna todas
+        if(filtroAtual === 'todas'){
+            return lista
+        }
+    }
+
+    // =========================
+    // ADICIONAR TAREFA
+    // =========================
+
+    function adicionarNaLista(){
+        // Remove espaços extras do texto
+        campoDigitado = valorCampo.value.trim()
+
+        // Impede adicionar tarefa vazia
+        if(campoDigitado === '') return
+
+        // Adiciona objeto da tarefa no array
+        lista.push({
+            texto: campoDigitado,
+            concluido: false
+        })
+
+        // Salva no LocalStorage
+        salvarLocalStorage()
+
+        // Debug no console
+        console.log(lista)
+
+        // Limpa o input
+        valorCampo.value = ''
+    }
+
+    // =========================
+    // CRIAÇÃO DOS ELEMENTOS HTML
+    // =========================
+
+    function criarElemento(){
+        const campoUl = document.querySelector('#name-list')
+
+        // Limpa toda a lista antes de recriar (evita duplicação)
+        campoUl.innerText = '';
+
+        // Percorre a lista já filtrada
+        pegarListaFiltrada().forEach(function(item, index){
+            const total = document.querySelector('#total')
+
+            // criando li
+            const li = document.createElement('li')
+            li.classList.add('task')
+            
+            // criando checkbox
+            const checkbox = document.createElement('input')
+            checkbox.classList.add('checkbox')
+            checkbox.type = "checkbox"
+            checkbox.checked = item.concluido
+
+            // criando span da tarefa digitada
+            const span = document.createElement('span')
+            span.classList.add('span')
+
+            // Criando span de edição
+            const editar = document.createElement('span')
+            editar.classList.add('editar')
+            
+            // criando Ícone de excluir
+            const spanEmoji = document.createElement('span')
+            spanEmoji.classList.add('spanEmoji')
+
+            // Se estiver concluído, risca o texto
+            if(item.concluido){
+                span.style.textDecoration = 'line-through'
+            }
+            
+
+            // Evento ao marcar/desmarcar checkbox
+            checkbox.addEventListener('change', function(){
+                item.concluido = checkbox.checked
+
+                if (item.concluido){
+                    span.style.textDecoration = 'line-through'
+                }else{
+                    span.style.textDecoration = 'none'
+                }
+
+                atualizarTotal()
+                salvarLocalStorage()
+            })
+            
+            // Define textos
+            span.innerText = item.texto
+            editar.innerText = "✏️"
+            spanEmoji.innerText = "🗑️"
+
+            // Evento de exclusão
+            spanEmoji.addEventListener('click', function(){
+                const indexReal = lista.indexOf(item)
+                lista.splice(indexReal, 1)
+
+                salvarLocalStorage()
+                criarElemento()
+                atualizarFrase()
+            })
+
+            // Monta o LI
+            li.appendChild(checkbox)
+            li.appendChild(span)
+            li.appendChild(editar)
+            li.appendChild(spanEmoji)
+            campoUl.appendChild(li)
+
+            // =========================
+            // EDIÇÃO DA TAREFA
+            // =========================
+
+            editar.addEventListener('click', function () {
+
+                // Input temporário para edição
+                const input = document.createElement('input')
+                input.type = 'text'
+                input.value = item.texto
+                input.classList.add('edit-input')
+
+                // Substitui o span pelo input
+                li.replaceChild(input, span)
+                input.focus()
+                    
+                let cancelou = false
+
+                // Salva com ENTER
+                input.addEventListener('keydown', function(e){
+                    if (e.key ==='Enter')
+                        salvarEdicao()
+                })
+
+                // Cancela edição com ESC
+                input.addEventListener('keydown', function (e) {
+                    if (e.key === 'Escape') {
+                        cancelou = true
+                        criarElemento()
+                    }
+                })
+
+                // Salva ao sair do campo
+                input.addEventListener('blur', function(){
+                    if (cancelou) return
+                    salvarEdicao()
+                })
+
+                // Função interna para salvar edição
+                function salvarEdicao() {
+                    const novoTexto = input.value.trim()
+                    if (novoTexto === '') return
+
+                    item.texto = novoTexto
+                    criarElemento()
+                    salvarLocalStorage()
+                }
+            })
+        })
+    }
+
+    // =========================
+    // CONTADOR DE TAREFAS
+    // =========================
+
+    function atualizarTotal() {
+        const total = document.querySelector('#total')
+
+        const totalTarefas = lista.length
+        const concluidas = lista.filter(item => item.concluido).length 
+
+        total.innerText = `Total: ${totalTarefas} • Concluídas: ${concluidas}`
+    }
+
+    // =========================
+    // LOCALSTORAGE
+    // =========================
+
+    function salvarLocalStorage(){
+        localStorage.setItem('tarefas', JSON.stringify(lista))
+    }
+
+    function carregarLocalStorage(){
+        const dados = localStorage.getItem('tarefas')
+        if (dados){
+            lista.push(...JSON.parse(dados))
+        }
+    }
+
+    // =========================
+    // INICIALIZAÇÃO
+    // =========================
+
+    criarElemento()
+    atualizarTotal()
+    atualizarFrase()
+</script>
+
+</html>                         
+
+
+<!--
+O que eu guardei na cabeça
+
+✔️ Regra 1
+Evento de elemento criado dinamicamente deve ser criado junto com ele
+
+✔️ Regra 2
+Nunca use children em array
+
+✔️ Regra 3
+Array manda, DOM obedece
+
+Remove do array
+Redesenha a tela
+
+
+
+
+🔮 Melhorias futuras (sem mexer agora)
+
+Quando você quiser evoluir esse projeto, boas ideias seriam:
+
+ID único por tarefa
+Evita depender de indexOf(item) ao excluir.
+
+Separar responsabilidades
+
+Função só para criar HTML
+
+Função só para lógica
+
+Função só para eventos
+
+Animações CSS
+
+Fade ao adicionar/remover tarefas
+
+Check animado
+
+Filtro persistente
+
+Salvar filtroAtual no LocalStorage
+
+Ordenação
+
+Pendentes primeiro
+
+Concluídas no final
+-->
